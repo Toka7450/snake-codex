@@ -23,8 +23,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Create Gradle wrapper JAR
+        shell: bash
+        run: |
+          WRAPPER_MAIN_JAR="$(find "${GRADLE_HOME:-$HOME/.gradle}" -name 'gradle-wrapper-main-*.jar' | head -n 1)"
+          if [ -z "$WRAPPER_MAIN_JAR" ]; then
+            WRAPPER_MAIN_JAR="$(find "$HOME" -name 'gradle-wrapper-main-*.jar' | head -n 1)"
+          fi
+          if [ -z "$WRAPPER_MAIN_JAR" ]; then
+            echo "Could not find gradle-wrapper-main JAR"
+            exit 1
+          fi
+          mkdir -p gradle/wrapper
+          cp "$WRAPPER_MAIN_JAR" /tmp/gradle-wrapper-main.jar
+          (cd /tmp && jar xf gradle-wrapper-main.jar gradle-wrapper.jar)
+          mv /tmp/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.jar
+
       - name: Assemble debug APK
-        run: gradle assembleDebug
+        run: ./gradlew assembleDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
